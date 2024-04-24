@@ -27,7 +27,13 @@ import React, { useState } from "react";
 
 const List: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<
+    {
+      name: { first: string; last: string };
+      picture: { thumbnail: string };
+      email: string;
+    }[]
+  >([]);
   const [showalert] = useIonAlert();
   const [showToast] = useIonToast();
 
