@@ -36,7 +36,7 @@ const Login: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Smart Cantina</IonTitle>
+          <IonTitle>Smart Cantina INIS TEST</IonTitle>
         </IonToolbar>
       </IonHeader>
 
