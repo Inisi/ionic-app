@@ -1,0 +1,83 @@
+/* For information on how to create your own theme, please see:
+http://ionicframework.com/docs/theming/ */
+:root {
+  /* MUI primary colors */
+  --ion-color-primary: #1976d2;
+  --ion-color-primary-rgb: 25, 118, 210;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #004ba0;
+  --ion-color-primary-tint: #63a4ff;
+
+  /* MUI secondary colors */
+  --ion-color-secondary: #dc004e;
+  --ion-color-secondary-rgb: 220, 0, 78;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #9a0036;
+  --ion-color-secondary-tint: #ff5c8d;
+
+  /* MUI tertiary colors */
+  --ion-color-tertiary: #6030ff;
+  --ion-color-tertiary-rgb: 96, 48, 255;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #542ae0;
+  --ion-color-tertiary-tint: #7045ff;
+
+  /* MUI success colors */
+  --ion-color-success: #4caf50;
+  --ion-color-success-rgb: 76, 175, 80;
+  --ion-color-success-contrast: #000000;
+  --ion-color-success-contrast-rgb: 0, 0, 0;
+  --ion-color-success-shade: #388e3c;
+  --ion-color-success-tint: #81c784;
+
+  /* MUI warning colors */
+  --ion-color-warning: #ff9800;
+  --ion-color-warning-rgb: 255, 152, 0;
+  --ion-color-warning-contrast: #000000;
+  --ion-color-warning-contrast-rgb: 0, 0, 0;
+  --ion-color-warning-shade: #f57c00;
+  --ion-color-warning-tint: #ffb74d;
+
+  /* MUI danger colors */
+  --ion-color-danger: #f44336;
+  --ion-color-danger-rgb: 244, 67, 54;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #d32f2f;
+  --ion-color-danger-tint: #e57373;
+
+  /* MUI light colors */
+  --ion-color-light: #f6f8fc;
+  --ion-color-light-rgb: 246, 248, 252;
+  --ion-color-light-contrast: #000000;
+  --ion-color-light-contrast-rgb: 0, 0, 0;
+  --ion-color-light-shade: #d8dade;
+  --ion-color-light-tint: #f7f9fc;
+
+  /* MUI medium colors */
+  --ion-color-medium: #5f5f5f;
+  --ion-color-medium-rgb: 95, 95, 95;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #545454;
+  --ion-color-medium-tint: #6f6f6f;
+
+  /* MUI dark colors */
+  --ion-color-dark: #2f2f2f;
+  --ion-color-dark-rgb: 47, 47, 47;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #292929;
+  --ion-color-dark-tint: #444444;
+}
+
+.ion-content::part(scroll)::-webkit-scrollbar {
+  display: none;
+}
+.ion-content::part(scroll) {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
