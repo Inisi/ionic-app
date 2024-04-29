@@ -32,7 +32,7 @@ const Settings: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton></IonMenuButton>
           </IonButtons>
-          <IonTitle>Settings</IonTitle>
+          <IonTitle>Settings Test</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding ion-content">
