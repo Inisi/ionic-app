@@ -2,6 +2,9 @@ import { Redirect, Route } from "react-router-dom";
 import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 
+import SqliteService from "./services/sqliteService";
+
+import DbVersionService from "./services/dbVersionService";
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
 
@@ -34,21 +37,24 @@ import "./theme/variables.css";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Menu from "./pages/Menu";
+import React from "react";
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/">
-          <Login />
-        </Route>
-        <Route component={Register} path="/register" exact />
-        <Route component={Menu} path="/app" />
-      </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
-);
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <Route exact path="/">
+            <Login />
+          </Route>
+          <Route component={Register} path="/register" exact />
+          <Route component={Menu} path="/app" />
+        </IonRouterOutlet>
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;
