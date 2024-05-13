@@ -37,11 +37,20 @@ import "./theme/variables.css";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Menu from "./pages/Menu";
+import { useEffect } from "react";
 import React from "react";
+import setupSQLiteDatabase from "./servicesTest/sqliteSetup";
+
+import { Capacitor } from "@capacitor/core";
+
+export const platform = Capacitor.getPlatform();
 
 setupIonicReact();
 
 const App: React.FC = () => {
+  useEffect(() => {
+    setupSQLiteDatabase();
+  }, []);
   return (
     <IonApp>
       <IonReactRouter>

@@ -1,22 +1,28 @@
-import React, { useState } from "react";
-import { IonButton, IonIcon, IonInput, IonItem, IonLabel } from "@ionic/react";
+// EditUser.tsx
+import React from "react";
+import { IonButton, IonInput, IonItem, IonLabel } from "@ionic/react";
 import { UserData } from "../servicesTest/databaseFunctions";
-import { Storage } from "@ionic/storage";
 
-const storage = new Storage();
-interface CreateNewUserProps {
-  setShowCard: any;
-  addUser: any;
-  setNewUser: any;
-  newUser: any;
+interface EditUserProps {
+  setShowEditCard: (value: boolean) => void;
+  editUser: (user: UserData) => void;
+  setNewUser: (user: UserData) => void;
+  newUser: UserData;
+  selectedUserId: number;
 }
 
-const CreateNewUser = (props: CreateNewUserProps) => {
-  const { setShowCard, addUser, setNewUser, newUser } = props;
-  const handleInputChange = (e: any, key: any) => {
+const EditUser: React.FC<EditUserProps> = ({
+  setShowEditCard,
+  editUser,
+  setNewUser,
+  newUser,
+  selectedUserId,
+}) => {
+  const handleInputChange = (e: any, key: string) => {
     if (key === "first" || key === "last") {
       setNewUser({
         ...newUser,
+        id: selectedUserId,
         name: {
           ...newUser.name,
           [key]: e.target.value,
@@ -25,6 +31,11 @@ const CreateNewUser = (props: CreateNewUserProps) => {
     } else {
       setNewUser({ ...newUser, [key]: e.target.value });
     }
+  };
+
+  const handleSubmit = () => {
+    editUser(newUser);
+    setShowEditCard(false);
   };
 
   return (
@@ -45,11 +56,11 @@ const CreateNewUser = (props: CreateNewUserProps) => {
           value={newUser.email}
           onIonChange={(e) => handleInputChange(e, "email")}
         />
-        <IonButton onClick={() => addUser(newUser)}>Submit</IonButton>
-        <IonButton onClick={() => setShowCard(false)}>Cancel</IonButton>
+        <IonButton onClick={handleSubmit}>Submit</IonButton>
+        <IonButton onClick={() => setShowEditCard(false)}>Cancel</IonButton>
       </IonItem>
     </>
   );
 };
 
-export default CreateNewUser;
+export default EditUser;

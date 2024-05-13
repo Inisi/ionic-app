@@ -1,27 +1,27 @@
 // sqliteSetup.ts
 
 import { CapacitorSQLite, capSQLiteOptions } from "@capacitor-community/sqlite";
+import { Capacitor } from "@capacitor/core";
 
 const DATABASE_NAME = "myDatabase";
 const DATABASE_VERSION = "1";
 const TABLE_NAME = "users";
 
 const initSQLite = async () => {
-  try {
+  if (Capacitor.isNative) {
     const options: capSQLiteOptions = {
       database: DATABASE_NAME,
+      readonly: false,
     };
 
     // Open or create the database
     const db = await CapacitorSQLite.open(options);
-    console.log(db, "test db");
+    console.log("SQLite database opened:", db);
 
     return db;
-  } catch (error) {
-    console.error("Error opening SQLite database:", error);
-    console.log("nuk hapet");
-
-    return null; // Return null in case of error
+  } else {
+    console.warn("SQLite is not supported on the web platform.");
+    return null;
   }
 };
 const createTable = async () => {

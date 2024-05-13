@@ -1,90 +1,46 @@
-// useSQLiteDB.ts
-import { useEffect, useRef, useState } from "react";
-import {
-  SQLiteDBConnection,
-  SQLiteConnection,
-  CapacitorSQLite,
-} from "@capacitor-community/sqlite";
+// useSQLiteDB.tsx
+
+import { SQLiteDBConnection } from "@capacitor-community/sqlite";
+import { useState } from "react";
+import { Storage } from "@ionic/storage";
 
 const useSQLiteDB = () => {
-  const db = useRef<SQLiteDBConnection | null>();
-  const sqlite = useRef<SQLiteConnection | null>();
-  const [initialized, setInitialized] = useState<boolean>(false);
+  const [dbOpened, setDbOpened] = useState(false);
+  const [sqliteDB, setSqliteDB] = useState<SQLiteDBConnection | null>(null);
+  const storage = new Storage();
 
-  console.log(db);
-
-  useEffect(() => {
-    const initializeDB = async () => {
-      try {
-        if (sqlite.current) return;
-
-        sqlite.current = new SQLiteConnection(CapacitorSQLite);
-        const ret = await sqlite.current.checkConnectionsConsistency();
-        const isConn = (await sqlite.current.isConnection("myDatabase", false))
-          .result;
-
-        if (ret.result && isConn) {
-          db.current = await sqlite.current.retrieveConnection(
-            "myDatabase",
-            false
-          );
-        } else {
-          db.current = await sqlite.current.createConnection(
-            "myDatabase",
-            false,
-            "no-encryption",
-            1,
-            false
-          );
-        }
-      } catch (error) {
-        console.error("Error initializing SQLite database:", error);
-      }
-    };
-
-    initializeDB().then(() => {
-      initializeTables();
-      setInitialized(true);
-    });
-  }, []);
-
-  const performSQLAction = async <T>(
-    action: (db: SQLiteDBConnection | undefined) => Promise<T>,
-    cleanup?: () => Promise<void>
-  ): Promise<T> => {
+  const openDatabase = async () => {
     try {
-      await db.current?.open();
-      const result = await action(db.current || undefined);
-      return result;
+      const db = new SQLiteDBConnection("myDatabase", false, "no-encryption");
+      await db.open();
+      setSqliteDB(db);
+      setDbOpened(true);
     } catch (error) {
-      console.error("Error performing SQL action:", error);
-      return [] as unknown as T; // Return an empty array in case of an error
-    } finally {
-      try {
-        (await db.current?.isDBOpen())?.result && (await db.current?.close());
-        cleanup && (await cleanup());
-      } catch {}
+      console.error("Error opening SQLite database:", error);
+      setDbOpened(false);
+      throw error;
     }
   };
 
-  const initializeTables = async () => {
-    performSQLAction(async (db: SQLiteDBConnection | undefined) => {
-      const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY,
-          firstName TEXT,
-          lastName TEXT,
-          thumbnail TEXT,
-          email TEXT
-        )
-      `;
-      const respCT = await db?.execute(createTableQuery);
-
-      console.log(`res: ${JSON.stringify(respCT)}`);
-    });
+  const performSQLAction = async (
+    action: (db: SQLiteDBConnection) => Promise<void>
+  ) => {
+    if (dbOpened && sqliteDB) {
+      try {
+        await action(sqliteDB);
+        console.log("SQLite database connected");
+      } catch (error) {
+        console.error("SQL Action error:", error);
+      }
+    } else {
+      console.log(
+        "SQLite database connection not established, falling back to Ionic Storage for CRUD operations"
+      );
+      throw new Error("SQLite database connection not established");
+    }
   };
 
-  return { performSQLAction, initialized, sqlite };
+  return { performSQLAction, openDatabase, dbOpened, sqliteDB };
 };
 
 export default useSQLiteDB;
