@@ -23,7 +23,13 @@ import {
   useIonToast,
 } from "@ionic/react";
 import _ from "lodash";
-import { addCircle, compassSharp, pencil, trashBinOutline, trashSharp } from "ionicons/icons";
+import {
+  addCircle,
+  compassSharp,
+  pencil,
+  trashBinOutline,
+  trashSharp,
+} from "ionicons/icons";
 import React, { useEffect, useState } from "react";
 import { Storage } from "@ionic/storage";
 import { UserData } from "../servicesTest/databaseFunctions";
@@ -37,14 +43,14 @@ const List: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserData>({
     id: 0, // Initialize id with 0
-    first_name:  "",
+    first_name: "",
     last_name: "",
     picture: { thumbnail: "" },
     email: "",
-  }); 
+  });
   const [newUser, setNewUser] = useState<UserData>({
     id: 0, // Initialize id with 0
-    first_name:  "",
+    first_name: "",
     last_name: "",
     picture: { thumbnail: "" },
     email: "",
@@ -92,10 +98,10 @@ const List: React.FC = () => {
   const syncDataWithDatabase = async () => {
     try {
       const storedUsers = await storage.get("users");
-      if (initialized  &&  db.current !== null) {
+      if (initialized && db.current !== null) {
         await performSQLAction(async (db) => {
           const respSelect = await db?.query(`SELECT * FROM users`);
-          console.log(respSelect, 'here')
+          console.log(respSelect, "here");
           const dbUsers = respSelect?.values || [];
           const isDataDifferent = !_.isEqual(storedUsers, dbUsers);
 
@@ -141,7 +147,7 @@ const List: React.FC = () => {
         setUsers(storedUsers);
         setNewUser({
           id: getLastId(storedUsers) + 1,
-          first_name:  "",
+          first_name: "",
           last_name: "",
           picture: { thumbnail: "" },
           email: "",
@@ -158,15 +164,15 @@ const List: React.FC = () => {
     try {
       await performSQLAction(async (db) => {
         await db?.run(
-          `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`,
-          [user.id, user.first_name, user.last_name, user.email]
+          `INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`,
+          [user.first_name, user.last_name, user.email]
         );
       });
       setUsers((prevUsers) => [...prevUsers, user]);
       await addUserToStorage(user);
       setNewUser({
         id: getLastId([...users, user]) + 1,
-        first_name:  "",
+        first_name: "",
         last_name: "",
         picture: { thumbnail: "" },
         email: "",
@@ -191,7 +197,7 @@ const List: React.FC = () => {
       setUsers(updatedUsers);
       setNewUser({
         id: getLastId([...users, user]) + 1,
-        first_name:  "",
+        first_name: "",
         last_name: "",
         picture: { thumbnail: "" },
         email: "",
@@ -398,15 +404,14 @@ const List: React.FC = () => {
                       ></IonIcon>
                     </IonButton>
                   </IonItem>
-                  { selectedUser?.id === user.id &&
-                    showEditCard && (
-                      <EditUser
-                        setShowEditCard={setShowEditCard}
-                        editUser={editUser}
-                        selectedUser={selectedUser}
-                        setSelectedUser={setSelectedUser}
-                      />
-                    )}
+                  {selectedUser?.id === user.id && showEditCard && (
+                    <EditUser
+                      setShowEditCard={setShowEditCard}
+                      editUser={editUser}
+                      selectedUser={selectedUser}
+                      setSelectedUser={setSelectedUser}
+                    />
+                  )}
                 </IonCardContent>
               </IonItemSliding>
             </IonCard>
