@@ -48,9 +48,10 @@ export const platform = Capacitor.getPlatform();
 setupIonicReact();
 
 const App: React.FC = () => {
-  useEffect(() => {
-    setupSQLiteDatabase();
-  }, []);
+  //Comment for now
+  // useEffect(() => {
+  //   setupSQLiteDatabase();
+  // }, []);
   return (
     <IonApp>
       <IonReactRouter>

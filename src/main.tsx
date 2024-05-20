@@ -5,9 +5,9 @@ import App from "./App";
 import { Capacitor } from "@capacitor/core";
 import { JeepSqlite } from "jeep-sqlite/dist/components/jeep-sqlite";
 import { defineCustomElements as pwaElements } from "@ionic/pwa-elements/loader";
+import { CapacitorSQLite, SQLiteConnection } from "@capacitor-community/sqlite";
 
 pwaElements(window);
-customElements.define("jeep-sqlite", JeepSqlite);
 const platform = Capacitor.getPlatform();
 
 const rootRender = () => {
@@ -19,20 +19,25 @@ const rootRender = () => {
     </React.StrictMode>
   );
 };
+
 if (platform !== "web") {
   rootRender();
 } else {
-  window.addEventListener("DOMContentLoaded", async () => {
-    const jeepEl = document.createElement("jeep-sqlite");
-    document.body.appendChild(jeepEl);
-    customElements
-      .whenDefined("jeep-sqlite")
-      .then(() => {
-        rootRender();
-      })
-      .catch((err) => {
-        console.log(`Error: ${err}`);
-        throw new Error(`Error: ${err}`);
-      });
-  });
+   try{
+    window.addEventListener("DOMContentLoaded", async () => {
+    const sqlite = new SQLiteConnection(CapacitorSQLite)
+    customElements.define("jeep-sqlite", JeepSqlite);
+    const jeepSqliteEl = document.createElement("jeep-sqlite");
+    document.body.appendChild(jeepSqliteEl);
+    await customElements.whenDefined("jeep-sqlite");
+    console.log(`after customElements.whenDefined`);
+    
+    // Initialize the Web store
+    await sqlite.initWebStore();
+    console.log(`after initWebStore`);
+    rootRender()
+  })  }
+   catch(err){
+    console.log(err)
+  }
 }

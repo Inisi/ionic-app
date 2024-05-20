@@ -23,11 +23,11 @@ import {
   useIonToast,
 } from "@ionic/react";
 import _ from "lodash";
-import { addCircle, pencil, trashBinOutline, trashSharp } from "ionicons/icons";
+import { addCircle, compassSharp, pencil, trashBinOutline, trashSharp } from "ionicons/icons";
 import React, { useEffect, useState } from "react";
 import { Storage } from "@ionic/storage";
 import { UserData } from "../servicesTest/databaseFunctions";
-import CreateNewUser from "./createNewUser";
+import CreateNewUser from "./CreateNewUser";
 import useSQLiteDB from "../servicesTest/useSQLiteDB";
 import EditUser from "./editUser";
 
@@ -35,15 +35,21 @@ const storage = new Storage();
 
 const List: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const { performSQLAction, openDatabase, dbOpened, sqliteDB } = useSQLiteDB();
-
+  const [selectedUser, setSelectedUser] = useState<UserData>({
+    id: 0, // Initialize id with 0
+    first_name:  "",
+    last_name: "",
+    picture: { thumbnail: "" },
+    email: "",
+  }); 
   const [newUser, setNewUser] = useState<UserData>({
     id: 0, // Initialize id with 0
-    name: { first: "", last: "" },
+    first_name:  "",
+    last_name: "",
     picture: { thumbnail: "" },
     email: "",
   });
+  const { performSQLAction, initialized, db, openDatabase } = useSQLiteDB();
 
   const [showCard, setShowCard] = useState(false);
   const [showEditCard, setShowEditCard] = useState(false);
@@ -63,17 +69,17 @@ const List: React.FC = () => {
   };
 
   useEffect(() => {
-    openDatabase().catch((error) => {
-      console.error("Error opening database:", error);
-    });
+    // openDatabase().catch((error) => {
+    //   console.error("Error opening database:", error);
+    // });
     fetchUsers();
-  }, []);
+  }, [initialized]);
 
   // Inside List component
   const fetchUsers = async () => {
     try {
       // Check if database connection is established
-      if (dbOpened && sqliteDB) {
+      if (initialized && db.current) {
         // Synchronize data with database
         await syncDataWithDatabase();
       }
@@ -86,18 +92,19 @@ const List: React.FC = () => {
   const syncDataWithDatabase = async () => {
     try {
       const storedUsers = await storage.get("users");
-      if (dbOpened && sqliteDB) {
+      if (initialized  &&  db.current !== null) {
         await performSQLAction(async (db) => {
-          const respSelect = await db.query(`SELECT * FROM users`);
-          const dbUsers = respSelect.values || [];
+          const respSelect = await db?.query(`SELECT * FROM users`);
+          console.log(respSelect, 'here')
+          const dbUsers = respSelect?.values || [];
           const isDataDifferent = !_.isEqual(storedUsers, dbUsers);
 
           if (isDataDifferent) {
-            await db.run(`DELETE FROM users`);
+            await db?.run(`DELETE FROM users`);
             for (const user of storedUsers) {
-              await db.run(
+              await db?.run(
                 `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`,
-                [user.id, user.name.first, user.name.last, user.email]
+                [user.id, user.first_name, user.last_name, user.email]
               );
             }
           }
@@ -114,9 +121,9 @@ const List: React.FC = () => {
   const fetchUsersFromApi = async () => {
     try {
       await performSQLAction(async (db) => {
-        const respSelect = await db.query(`SELECT * FROM users`);
-        setUsers(respSelect.values || []);
-        await storage.set("users", respSelect.values);
+        const respSelect = await db?.query(`SELECT * FROM users`);
+        setUsers(respSelect?.values || []);
+        await storage.set("users", respSelect?.values);
 
         console.log("Database connection successful, fetched from API");
       });
@@ -134,7 +141,8 @@ const List: React.FC = () => {
         setUsers(storedUsers);
         setNewUser({
           id: getLastId(storedUsers) + 1,
-          name: { first: "", last: "" },
+          first_name:  "",
+          last_name: "",
           picture: { thumbnail: "" },
           email: "",
         });
@@ -149,16 +157,17 @@ const List: React.FC = () => {
   const addUser = async (user: UserData) => {
     try {
       await performSQLAction(async (db) => {
-        await db.run(
+        await db?.run(
           `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`,
-          [user.id, user.name.first, user.name.last, user.email]
+          [user.id, user.first_name, user.last_name, user.email]
         );
       });
       setUsers((prevUsers) => [...prevUsers, user]);
       await addUserToStorage(user);
       setNewUser({
         id: getLastId([...users, user]) + 1,
-        name: { first: "", last: "" },
+        first_name:  "",
+        last_name: "",
         picture: { thumbnail: "" },
         email: "",
       });
@@ -182,7 +191,8 @@ const List: React.FC = () => {
       setUsers(updatedUsers);
       setNewUser({
         id: getLastId([...users, user]) + 1,
-        name: { first: "", last: "" },
+        first_name:  "",
+        last_name: "",
         picture: { thumbnail: "" },
         email: "",
       });
@@ -195,11 +205,11 @@ const List: React.FC = () => {
   const editUser = async (updatedUser: UserData) => {
     try {
       await performSQLAction(async (db) => {
-        await db.run(
+        await db?.run(
           `UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
           [
-            updatedUser.name.first,
-            updatedUser.name.last,
+            updatedUser.first_name,
+            updatedUser.last_name,
             updatedUser.email,
             updatedUser.id,
           ]
@@ -239,7 +249,7 @@ const List: React.FC = () => {
   const deleteUser = async (userId: number) => {
     try {
       await performSQLAction(async (db) => {
-        await db.run(`DELETE FROM users WHERE id = ?`, [userId]);
+        await db?.run(`DELETE FROM users WHERE id = ?`, [userId]);
       });
       await deleteUserFromStorage(userId);
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
@@ -277,7 +287,7 @@ const List: React.FC = () => {
           handler: async () => {
             try {
               await performSQLAction(async (db) => {
-                await db.run(`DELETE FROM users`);
+                await db?.run(`DELETE FROM users`);
               });
               await clearUsersFromStorage();
               setUsers([]);
@@ -352,7 +362,7 @@ const List: React.FC = () => {
                     color="medium"
                     onClick={() => {
                       setShowEditCard(!showEditCard);
-                      setSelectedUserId(user.id);
+                      setSelectedUser(user);
                     }}
                   >
                     Edit
@@ -361,10 +371,10 @@ const List: React.FC = () => {
                 <IonCardContent className="ion-no-padding">
                   <IonItem lines="none">
                     <IonAvatar slot="start">
-                      <IonImg src={user.picture.thumbnail} />
+                      <IonImg src={user.picture?.thumbnail} />
                     </IonAvatar>
                     <IonLabel>
-                      {user.name.first} {user.name.last}
+                      {user.first_name} {user.last_name}
                       <p>{user.email}</p>
                     </IonLabel>
                     <IonButton color="none" onClick={() => deleteUser(user.id)}>
@@ -378,7 +388,7 @@ const List: React.FC = () => {
                       color="none"
                       onClick={() => {
                         setShowEditCard(!showEditCard);
-                        setSelectedUserId(user.id);
+                        setSelectedUser(user);
                       }}
                     >
                       <IonIcon
@@ -388,15 +398,13 @@ const List: React.FC = () => {
                       ></IonIcon>
                     </IonButton>
                   </IonItem>
-                  {selectedUserId === user.id &&
-                    selectedUserId !== null &&
+                  { selectedUser?.id === user.id &&
                     showEditCard && (
                       <EditUser
                         setShowEditCard={setShowEditCard}
                         editUser={editUser}
-                        newUser={newUser}
-                        setNewUser={setNewUser}
-                        selectedUserId={selectedUserId}
+                        selectedUser={selectedUser}
+                        setSelectedUser={setSelectedUser}
                       />
                     )}
                 </IonCardContent>
