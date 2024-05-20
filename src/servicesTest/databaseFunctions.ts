@@ -6,10 +6,8 @@ const TABLE_NAME = "users";
 
 export interface UserData {
   id: number;
-  name: {
-    first: string;
-    last: string;
-  };
+  first_name:  string,
+  last_name: string,
   picture: {
     thumbnail: string;
   };
@@ -28,23 +26,23 @@ export const fetchUserData = async (
 
   return result.values.map((row: any) => ({
     id: row.id,
-    name: { first: row.firstName, last: row.lastName },
+    first_name: row.first_name, 
+    last_name: row.last_name ,
     picture: { thumbnail: row.thumbnail },
     email: row.email,
   }));
 };
 
 export const insertUserData = async (userData: UserData): Promise<void> => {
-  const { name, picture, email } = userData;
-  const { first, last } = name;
+  const { first_name, last_name, picture, email } = userData;
   const { thumbnail } = picture;
 
   const { performSQLAction } = useSQLiteDB();
   await performSQLAction(async (db) => {
-    const values = [first, last, thumbnail, email];
+    const values = [ thumbnail, email];
     const insertQuery = `
-      INSERT INTO ${TABLE_NAME} (firstName, lastName, thumbnail, email)
-      VALUES (${first}, ${last}, ${thumbnail}, ${email})
+      INSERT INTO ${TABLE_NAME} (first_name, last_Name, thumbnail, email)
+      VALUES (${first_name}, ${last_name}, ${thumbnail}, ${email})
     `;
 
     await db?.execute(insertQuery);
@@ -55,16 +53,15 @@ export const updateUserData = async (
   userId: number,
   updatedUserData: UserData
 ): Promise<void> => {
-  const { name, picture, email } = updatedUserData;
-  const { first, last } = name;
+  const { first_name, last_name, picture, email } = updatedUserData;
   const { thumbnail } = picture;
 
   const { performSQLAction } = useSQLiteDB();
   await performSQLAction(async (db) => {
-    const values = [first, last, thumbnail, email, userId];
+    const values = [first_name, last_name, thumbnail, email, userId];
     const updateQuery = `
       UPDATE ${TABLE_NAME}
-      SET firstName=${first}, lastName=${last}, ${thumbnail}, email=${email}
+      SET first_name=${first_name}, last_name=${last_name}, ${thumbnail}, email=${email}
       WHERE id=${userId}
     `;
 

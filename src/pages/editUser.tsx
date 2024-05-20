@@ -6,35 +6,25 @@ import { UserData } from "../servicesTest/databaseFunctions";
 interface EditUserProps {
   setShowEditCard: (value: boolean) => void;
   editUser: (user: UserData) => void;
-  setNewUser: (user: UserData) => void;
-  newUser: UserData;
-  selectedUserId: number;
+  setSelectedUser: (user: UserData) => void;
+  selectedUser: UserData;
 }
 
 const EditUser: React.FC<EditUserProps> = ({
   setShowEditCard,
   editUser,
-  setNewUser,
-  newUser,
-  selectedUserId,
+  selectedUser,
+  setSelectedUser
 }) => {
-  const handleInputChange = (e: any, key: string) => {
-    if (key === "first" || key === "last") {
-      setNewUser({
-        ...newUser,
-        id: selectedUserId,
-        name: {
-          ...newUser.name,
-          [key]: e.target.value,
-        },
-      });
-    } else {
-      setNewUser({ ...newUser, [key]: e.target.value });
-    }
+  const handleInputChange = (e: any, key: keyof UserData) => {
+    setSelectedUser({
+      ...selectedUser,
+      [key]: e.target.value, 
+    });
   };
 
   const handleSubmit = () => {
-    editUser(newUser);
+    editUser(selectedUser);
     setShowEditCard(false);
   };
 
@@ -43,17 +33,17 @@ const EditUser: React.FC<EditUserProps> = ({
       <IonItem>
         <IonLabel position="stacked">First Name</IonLabel>
         <IonInput
-          value={newUser.name.first}
-          onIonChange={(e) => handleInputChange(e, "first")}
+          value={selectedUser.first_name}
+          onIonChange={(e) => handleInputChange(e, "first_name")}
         />
         <IonLabel position="stacked">Last Name</IonLabel>
         <IonInput
-          value={newUser.name.last}
-          onIonChange={(e) => handleInputChange(e, "last")}
+          value={selectedUser.last_name}
+          onIonChange={(e) => handleInputChange(e, "last_name")}
         />
         <IonLabel position="stacked">Email</IonLabel>
         <IonInput
-          value={newUser.email}
+          value={selectedUser.email}
           onIonChange={(e) => handleInputChange(e, "email")}
         />
         <IonButton onClick={handleSubmit}>Submit</IonButton>

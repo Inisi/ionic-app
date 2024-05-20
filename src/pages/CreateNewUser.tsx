@@ -13,18 +13,12 @@ interface CreateNewUserProps {
 
 const CreateNewUser = (props: CreateNewUserProps) => {
   const { setShowCard, addUser, setNewUser, newUser } = props;
-  const handleInputChange = (e: any, key: any) => {
-    if (key === "first" || key === "last") {
-      setNewUser({
-        ...newUser,
-        name: {
-          ...newUser.name,
-          [key]: e.target.value,
-        },
-      });
-    } else {
-      setNewUser({ ...newUser, [key]: e.target.value });
-    }
+
+  const handleInputChange = (e: any, key: keyof UserData) => {
+    setNewUser({
+      ...newUser,
+      [key]: e.target.value,
+    });
   };
 
   return (
@@ -32,13 +26,13 @@ const CreateNewUser = (props: CreateNewUserProps) => {
       <IonItem>
         <IonLabel position="stacked">First Name</IonLabel>
         <IonInput
-          value={newUser.name.first}
-          onIonChange={(e) => handleInputChange(e, "first")}
+          value={newUser.first_name}
+          onIonChange={(e) => handleInputChange(e, "first_name")}
         />
         <IonLabel position="stacked">Last Name</IonLabel>
         <IonInput
-          value={newUser.name.last}
-          onIonChange={(e) => handleInputChange(e, "last")}
+          value={newUser.last_name}
+          onIonChange={(e) => handleInputChange(e, "last_name")}
         />
         <IonLabel position="stacked">Email</IonLabel>
         <IonInput
