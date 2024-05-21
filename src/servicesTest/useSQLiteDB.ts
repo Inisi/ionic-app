@@ -44,16 +44,25 @@ const useSQLiteDB = () => {
 
   const initializeTables = async () => {
     await performSQLAction(async (db: SQLiteDBConnection | undefined) => {
-      const queryCreateTable =
+      const queryCreateTable = [
       ` CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
         first_name TEXT,
         last_name TEXT,
         thumbnail TEXT,
         email TEXT
-      );`;
-      const respCT = await db?.execute(queryCreateTable);
-      console.log(`res: ${JSON.stringify(respCT)}`);
+      );`,
+      `CREATE TABLE IF NOT EXISTS operations (
+        id INTEGER PRIMARY KEY,
+        type TEXT,
+        data TEXT
+      );`
+      ];
+      queryCreateTable.map(async (query) =>{
+        const respCT = await db?.execute(query);
+        console.log(`res: ${JSON.stringify(respCT)}`);
+      })
+    
     });
   };
 
