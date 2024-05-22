@@ -22,7 +22,7 @@ import {
   useIonAlert,
   useIonToast,
 } from "@ionic/react";
-import _ from "lodash";
+import _, { result } from "lodash";
 import {
   addCircle,
   compassSharp,
@@ -36,6 +36,7 @@ import { UserData } from "../servicesTest/databaseFunctions";
 import CreateNewUser from "./CreateNewUser";
 import useSQLiteDB from "../servicesTest/useSQLiteDB";
 import EditUser from "./editUser";
+import axios from "axios";
 
 const storage = new Storage();
 
@@ -87,7 +88,7 @@ const List: React.FC = () => {
       // Check if database connection is established
       if (initialized && db.current) {
         // Synchronize data with database
-        await syncDataWithDatabase();
+        //await syncDataWithDatabase();
       }
       await fetchUsersFromApi();
     } catch (error) {
@@ -95,29 +96,46 @@ const List: React.FC = () => {
     }
   };
 
-  const syncDataWithDatabase = async () => {
+  const syncDataWithDatabase = async (result: UserData[]) => {
     try {
-      const storedUsers = await storage.get("users");
-      if (initialized && db.current !== null) {
+       alert(1)
+       let operations: any | undefined = []
+       if (initialized && db.current !== null) {
+        console.log('initialized', initialized, db.current)
         await performSQLAction(async (db) => {
-          const respSelect = await db?.query(`SELECT * FROM users`);
-          console.log(respSelect, "here");
-          const dbUsers = respSelect?.values || [];
-          const isDataDifferent = !_.isEqual(storedUsers, dbUsers);
-
-          if (isDataDifferent) {
-            await db?.run(`DELETE FROM users`);
-            for (const user of storedUsers) {
-              await db?.run(
-                `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`,
-                [user.id, user.first_name, user.last_name, user.email]
-              );
-            }
+          let respSelect = await db?.query(`SELECT * FROM operations`);
+          operations = respSelect?.values
+        }) 
+        console.log(operations)
+         if(operations?.length > 0){
+          operations.map(async (operation: any) => {
+            console.log(operation)
+             switch (operation.type) {
+             case 'post':
+              await fetch('http://10.138.88.77:3000/users', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: operation.data,
+              });
+              break;
+            case 'update':
+              await axios.put(`/api/users/`);
+              break;
+            case 'delete':
+              await axios.delete(`/api/users/${operation.email}`);
+              break;
+            default:
+              throw new Error(`Unknown operation type: ${operation.type}`);
           }
-          if (isDataDifferent) {
-            setUsers(storedUsers);
-          }
-        });
+          })
+          await performSQLAction(async (db) => {
+          let respSelect = await db?.query(`DELETE FROM operations`);
+          console.log(respSelect, 'operations after deleted')
+          }) 
+         }
+         
       }
     } catch (error) {
       console.error("Error syncing data with database:", error);
@@ -126,16 +144,43 @@ const List: React.FC = () => {
 
   const fetchUsersFromApi = async () => {
     try {
-      await performSQLAction(async (db) => {
-        const respSelect = await db?.query(`SELECT * FROM users`);
-        setUsers(respSelect?.values || []);
-        await storage.set("users", respSelect?.values);
-
+        const response = await fetch('http://10.138.88.77:3000/data', {
+          method: 'GET',
+        });
+        const result = await response.json();
+        console.log('Response:', result);
+        await syncDataWithDatabase(result)
+    
+        if(!result.length){
+          await performSQLAction(async (db) => {
+            const respSelect = await db?.query(`SELECT FROM users`)
+            setUsers(respSelect?.values || [])
+          })
+          }
+          else{
+          await performSQLAction(async (db) => {
+            await db?.run(`DELETE  FROM users`);
+          });
+          result.map(async (res:UserData) => {
+             await performSQLAction(async (db) => {
+             const respSelect = await db?.query(`INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`, 
+             [res.first_name, res.last_name, res.email]);
+          })
+       
+          setUsers(result || [])
+        
         console.log("Database connection successful, fetched from API");
       });
+        }
+        
     } catch (error) {
       console.error("Error fetching users from database:", error);
-      await fetchUsersFromStorage();
+      await performSQLAction(async (db) => {
+        const respSelect = await db?.query(`SELECT * FROM users`)
+        console.log(respSelect)
+        setUsers(respSelect?.values || [])
+      })
+      //await fetchUsersFromStorage();
       throw error;
     }
   };
@@ -162,13 +207,15 @@ const List: React.FC = () => {
   };
   const addUser = async (user: UserData) => {
     try {
-      await performSQLAction(async (db) => {
-        await db?.run(
-          `INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`,
-          [user.first_name, user.last_name, user.email]
-        );
-      });
-      setUsers((prevUsers) => [...prevUsers, user]);
+        const response = await fetch('http://10.138.88.77:3000/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user),
+        });
+        const result = await response.json();
+        console.log('Response:', result)
       await addUserToStorage(user);
       setNewUser({
         id: getLastId([...users, user]) + 1,
@@ -180,8 +227,20 @@ const List: React.FC = () => {
       setShowCard(false);
     } catch (error) {
       console.error("Error adding user to database:", error);
-      await addUserToStorage(user);
+      await performSQLAction(async (db) => {
+        await db?.run(
+          `INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`,
+          [user.first_name, user.last_name, user.email]
+        );
+      });
+      await performSQLAction(async (db) => {
+        await db?.run(
+          `INSERT INTO operations (type, data) VALUES (?, ?)`,
+          ['post', JSON.stringify(user)]
+        );
+      });
     }
+    setUsers((prevUsers) => [...prevUsers, user]);
   };
 
   const addUserToStorage = async (user: UserData) => {

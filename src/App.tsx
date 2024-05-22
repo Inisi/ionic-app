@@ -1,10 +1,6 @@
-import { Redirect, Route } from "react-router-dom";
+import { Route } from "react-router-dom";
 import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-
-import SqliteService from "./services/sqliteService";
-
-import DbVersionService from "./services/dbVersionService";
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
 
@@ -48,10 +44,14 @@ export const platform = Capacitor.getPlatform();
 setupIonicReact();
 
 const App: React.FC = () => {
+
   //Comment for now
-  // useEffect(() => {
-  //   setupSQLiteDatabase();
-  // }, []);
+  useEffect(() => {
+    setInterval(async ()=>{
+     console.log('eri')
+     //syncOperations()
+    }, 10000);
+  }, []);
   return (
     <IonApp>
       <IonReactRouter>
