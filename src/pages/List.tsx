@@ -98,44 +98,43 @@ const List: React.FC = () => {
 
   const syncDataWithDatabase = async (result: UserData[]) => {
     try {
-       alert(1)
-       let operations: any | undefined = []
-       if (initialized && db.current !== null) {
-        console.log('initialized', initialized, db.current)
+      alert(1);
+      let operations: any | undefined = [];
+      if (initialized && db.current !== null) {
+        console.log("initialized", initialized, db.current);
         await performSQLAction(async (db) => {
           let respSelect = await db?.query(`SELECT * FROM operations`);
-          operations = respSelect?.values
-        }) 
-        console.log(operations)
-         if(operations?.length > 0){
+          operations = respSelect?.values;
+        });
+        console.log(operations);
+        if (operations?.length > 0) {
           operations.map(async (operation: any) => {
-            console.log(operation)
-             switch (operation.type) {
-             case 'post':
-              await fetch('http://10.138.88.77:3000/users', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: operation.data,
-              });
-              break;
-            case 'update':
-              await axios.put(`/api/users/`);
-              break;
-            case 'delete':
-              await axios.delete(`/api/users/${operation.email}`);
-              break;
-            default:
-              throw new Error(`Unknown operation type: ${operation.type}`);
-          }
-          })
+            console.log(operation);
+            switch (operation.type) {
+              case "post":
+                await fetch("http://10.138.88.77:3000/users", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: operation.data,
+                });
+                break;
+              case "update":
+                await axios.put(`/api/users/`);
+                break;
+              case "delete":
+                await axios.delete(`/api/users/${operation.email}`);
+                break;
+              default:
+                throw new Error(`Unknown operation type: ${operation.type}`);
+            }
+          });
           await performSQLAction(async (db) => {
-          let respSelect = await db?.query(`DELETE FROM operations`);
-          console.log(respSelect, 'operations after deleted')
-          }) 
-         }
-         
+            let respSelect = await db?.query(`DELETE FROM operations`);
+            console.log(respSelect, "operations after deleted");
+          });
+        }
       }
     } catch (error) {
       console.error("Error syncing data with database:", error);
@@ -144,79 +143,58 @@ const List: React.FC = () => {
 
   const fetchUsersFromApi = async () => {
     try {
-        const response = await fetch('http://10.138.88.77:3000/data', {
-          method: 'GET',
-        });
-        const result = await response.json();
-        console.log('Response:', result);
-        await syncDataWithDatabase(result)
-    
-        if(!result.length){
-          await performSQLAction(async (db) => {
-            const respSelect = await db?.query(`SELECT FROM users`)
-            setUsers(respSelect?.values || [])
-          })
-          }
-          else{
-          await performSQLAction(async (db) => {
-            await db?.run(`DELETE  FROM users`);
-          });
-          result.map(async (res:UserData) => {
-             await performSQLAction(async (db) => {
-             const respSelect = await db?.query(`INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`, 
-             [res.first_name, res.last_name, res.email]);
-          })
-       
-          setUsers(result || [])
-        
-        console.log("Database connection successful, fetched from API");
+      const response = await fetch("http://10.138.88.77:3000/data", {
+        method: "GET",
       });
-        }
-        
+      const result = await response.json();
+      console.log("Response:", result);
+      await syncDataWithDatabase(result);
+
+      if (!result.length) {
+        await performSQLAction(async (db) => {
+          const respSelect = await db?.query(`SELECT FROM users`);
+          setUsers(respSelect?.values || []);
+        });
+      } else {
+        await performSQLAction(async (db) => {
+          await db?.run(`DELETE  FROM users`);
+        });
+        result.map(async (res: UserData) => {
+          await performSQLAction(async (db) => {
+            const respSelect = await db?.query(
+              `INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`,
+              [res.first_name, res.last_name, res.email]
+            );
+          });
+
+          setUsers(result || []);
+
+          console.log("Database connection successful, fetched from API");
+        });
+      }
     } catch (error) {
       console.error("Error fetching users from database:", error);
       await performSQLAction(async (db) => {
-        const respSelect = await db?.query(`SELECT * FROM users`)
-        console.log(respSelect)
-        setUsers(respSelect?.values || [])
-      })
+        const respSelect = await db?.query(`SELECT * FROM users`);
+        console.log(respSelect);
+        setUsers(respSelect?.values || []);
+      });
       //await fetchUsersFromStorage();
       throw error;
     }
   };
 
-  const fetchUsersFromStorage = async () => {
-    try {
-      const storedUsers = await storage.get("users");
-      if (storedUsers) {
-        setUsers(storedUsers);
-        setNewUser({
-          id: getLastId(storedUsers) + 1,
-          first_name: "",
-          last_name: "",
-          picture: { thumbnail: "" },
-          email: "",
-        });
-      } else {
-        await storage.set("users", []);
-        setUsers([]);
-      }
-    } catch (error) {
-      console.error("Error fetching users from storage:", error);
-    }
-  };
   const addUser = async (user: UserData) => {
     try {
-        const response = await fetch('http://10.138.88.77:3000/users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(user),
-        });
-        const result = await response.json();
-        console.log('Response:', result)
-      await addUserToStorage(user);
+      const response = await fetch("http://10.138.88.77:3000/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(user),
+      });
+      const result = await response.json();
+      console.log("Response:", result);
       setNewUser({
         id: getLastId([...users, user]) + 1,
         first_name: "",
@@ -234,37 +212,13 @@ const List: React.FC = () => {
         );
       });
       await performSQLAction(async (db) => {
-        await db?.run(
-          `INSERT INTO operations (type, data) VALUES (?, ?)`,
-          ['post', JSON.stringify(user)]
-        );
+        await db?.run(`INSERT INTO operations (type, data) VALUES (?, ?)`, [
+          "post",
+          JSON.stringify(user),
+        ]);
       });
     }
     setUsers((prevUsers) => [...prevUsers, user]);
-  };
-
-  const addUserToStorage = async (user: UserData) => {
-    try {
-      const storedUsers = await storage.get("users");
-      let updatedUsers = [];
-      if (storedUsers) {
-        updatedUsers = [...storedUsers, user];
-      } else {
-        updatedUsers = [user];
-      }
-      await storage.set("users", updatedUsers);
-      setUsers(updatedUsers);
-      setNewUser({
-        id: getLastId([...users, user]) + 1,
-        first_name: "",
-        last_name: "",
-        picture: { thumbnail: "" },
-        email: "",
-      });
-      setShowCard(false);
-    } catch (error) {
-      console.error("Error adding user to storage:", error);
-    }
   };
 
   const editUser = async (updatedUser: UserData) => {
@@ -280,7 +234,6 @@ const List: React.FC = () => {
           ]
         );
       });
-      await editUserInStorage(updatedUser);
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.id === updatedUser.id ? updatedUser : user
@@ -289,25 +242,6 @@ const List: React.FC = () => {
       setShowEditCard(false);
     } catch (error) {
       console.error("Error editing user in database:", error);
-      await editUserInStorage(updatedUser);
-    }
-  };
-
-  const editUserInStorage = async (updatedUser: UserData) => {
-    try {
-      const storedUsers = await storage.get("users");
-      if (storedUsers) {
-        const updatedUsers = storedUsers.map((user: UserData) =>
-          user.id === updatedUser.id ? updatedUser : user
-        );
-        await storage.set("users", updatedUsers);
-        setUsers(updatedUsers);
-      } else {
-        console.error("No users found in storage.");
-      }
-      setShowEditCard(false);
-    } catch (error) {
-      console.error("Error editing user in storage:", error);
     }
   };
 
@@ -316,28 +250,9 @@ const List: React.FC = () => {
       await performSQLAction(async (db) => {
         await db?.run(`DELETE FROM users WHERE id = ?`, [userId]);
       });
-      await deleteUserFromStorage(userId);
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
     } catch (error) {
       console.error("Error deleting user from database:", error);
-      await deleteUserFromStorage(userId);
-    }
-  };
-
-  const deleteUserFromStorage = async (userId: number) => {
-    try {
-      const storedUsers = await storage.get("users");
-      if (storedUsers) {
-        const updatedUsers = storedUsers.filter(
-          (user: UserData) => user.id !== userId
-        );
-        await storage.set("users", updatedUsers);
-        setUsers(updatedUsers);
-      } else {
-        console.error("No users found in storage.");
-      }
-    } catch (error) {
-      console.error("Error deleting user from storage:", error);
     }
   };
 
@@ -354,7 +269,6 @@ const List: React.FC = () => {
               await performSQLAction(async (db) => {
                 await db?.run(`DELETE FROM users`);
               });
-              await clearUsersFromStorage();
               setUsers([]);
               showToast({
                 message: "All users deleted",
@@ -363,26 +277,11 @@ const List: React.FC = () => {
               });
             } catch (error) {
               console.error("Error clearing users from database:", error);
-              await clearUsersFromStorage();
             }
           },
         },
       ],
     });
-  };
-
-  const clearUsersFromStorage = async () => {
-    try {
-      await storage.remove("users");
-      setUsers([]);
-      showToast({
-        message: "All users deleted",
-        duration: 2000,
-        color: "danger",
-      });
-    } catch (error) {
-      console.error("Error clearing users from storage:", error);
-    }
   };
 
   const getLastId = (users: UserData[]): number => {
