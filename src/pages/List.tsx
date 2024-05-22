@@ -141,45 +141,36 @@ const List: React.FC = () => {
     }
   };
 
-  const fetchUsersFromApi = async () => {
+ const fetchUsersFromApi = async () => {
     try {
-      const response = await fetch("http://10.138.88.77:3000/data", {
-        method: "GET",
-      });
-      const result = await response.json();
-      console.log("Response:", result);
-      await syncDataWithDatabase(result);
-
-      if (!result.length) {
-        await performSQLAction(async (db) => {
-          const respSelect = await db?.query(`SELECT FROM users`);
-          setUsers(respSelect?.values || []);
+        const response = await fetch('http://10.138.88.77:3000/data', {
+          method: 'GET',
         });
-      } else {
-        await performSQLAction(async (db) => {
-          await db?.run(`DELETE  FROM users`);
-        });
-        result.map(async (res: UserData) => {
+        const result = await response.json();
+        console.log('Response:', result);
+        await syncDataWithDatabase(result)
+  
           await performSQLAction(async (db) => {
-            const respSelect = await db?.query(
-              `INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`,
-              [res.first_name, res.last_name, res.email]
-            );
+            await db?.run(`DELETE  FROM users`);
           });
-
-          setUsers(result || []);
-
-          console.log("Database connection successful, fetched from API");
+          result.map(async (res:UserData) => {
+             await performSQLAction(async (db) => {
+             const respSelect = await db?.query(`INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`, 
+             [res.first_name, res.last_name, res.email]);
+          })
+       
+          setUsers(result || [])
+        
+        console.log("Database connection successful, fetched from API");
         });
-      }
+        
     } catch (error) {
       console.error("Error fetching users from database:", error);
       await performSQLAction(async (db) => {
-        const respSelect = await db?.query(`SELECT * FROM users`);
-        console.log(respSelect);
-        setUsers(respSelect?.values || []);
-      });
-      //await fetchUsersFromStorage();
+        const respSelect = await db?.query(`SELECT * FROM users`)
+        console.log(respSelect)
+        setUsers(respSelect?.values || [])
+      })
       throw error;
     }
   };
