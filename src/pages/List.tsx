@@ -98,17 +98,27 @@ const List: React.FC = () => {
 
   const syncDataWithDatabase = async (result: UserData[]) => {
     try {
+       alert(1)
        let operations: any | undefined = []
        if (initialized && db.current !== null) {
+        console.log('initialized', initialized, db.current)
         await performSQLAction(async (db) => {
-          let respSelect = await db?.query(`SELECT FROM users`);
+          let respSelect = await db?.query(`SELECT * FROM operations`);
           operations = respSelect?.values
         }) 
-         if(operations?.value > 0){
+        console.log(operations)
+         if(operations?.length > 0){
           operations.map(async (operation: any) => {
+            console.log(operation)
              switch (operation.type) {
-             case 'create':
-              await axios.post('/api/users', operation.data);
+             case 'post':
+              await fetch('http://10.138.88.77:3000/users', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: operation.data,
+              });
               break;
             case 'update':
               await axios.put(`/api/users/`);
@@ -120,11 +130,12 @@ const List: React.FC = () => {
               throw new Error(`Unknown operation type: ${operation.type}`);
           }
           })
-         
+          await performSQLAction(async (db) => {
+          let respSelect = await db?.query(`DELETE FROM operations`);
+          console.log(respSelect, 'operations after deleted')
+          }) 
          }
-         await performSQLAction(async (db) => {
-          let respSelect = await db?.query(`DELETE * FROM operations`);
-        }) 
+         
       }
     } catch (error) {
       console.error("Error syncing data with database:", error);
@@ -133,7 +144,7 @@ const List: React.FC = () => {
 
   const fetchUsersFromApi = async () => {
     try {
-        const response = await fetch('http://localhost:3000/data', {
+        const response = await fetch('http://10.138.88.77:3000/data', {
           method: 'GET',
         });
         const result = await response.json();
@@ -166,6 +177,7 @@ const List: React.FC = () => {
       console.error("Error fetching users from database:", error);
       await performSQLAction(async (db) => {
         const respSelect = await db?.query(`SELECT * FROM users`)
+        console.log(respSelect)
         setUsers(respSelect?.values || [])
       })
       //await fetchUsersFromStorage();
@@ -195,7 +207,7 @@ const List: React.FC = () => {
   };
   const addUser = async (user: UserData) => {
     try {
-        const response = await fetch('http://localhost:3000/users', {
+        const response = await fetch('http://10.138.88.77:3000/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -224,7 +236,7 @@ const List: React.FC = () => {
       await performSQLAction(async (db) => {
         await db?.run(
           `INSERT INTO operations (type, data) VALUES (?, ?)`,
-          ['post', user]
+          ['post', JSON.stringify(user)]
         );
       });
     }
