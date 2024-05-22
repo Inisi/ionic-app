@@ -150,14 +150,7 @@ const List: React.FC = () => {
         const result = await response.json();
         console.log('Response:', result);
         await syncDataWithDatabase(result)
-    
-        if(!result.length){
-          await performSQLAction(async (db) => {
-            const respSelect = await db?.query(`SELECT FROM users`)
-            setUsers(respSelect?.values || [])
-          })
-          }
-          else{
+  
           await performSQLAction(async (db) => {
             await db?.run(`DELETE  FROM users`);
           });
@@ -170,8 +163,7 @@ const List: React.FC = () => {
           setUsers(result || [])
         
         console.log("Database connection successful, fetched from API");
-      });
-        }
+        });
         
     } catch (error) {
       console.error("Error fetching users from database:", error);
@@ -180,7 +172,6 @@ const List: React.FC = () => {
         console.log(respSelect)
         setUsers(respSelect?.values || [])
       })
-      //await fetchUsersFromStorage();
       throw error;
     }
   };
