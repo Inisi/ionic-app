@@ -60,6 +60,7 @@ const List: React.FC = () => {
 
   const [showCard, setShowCard] = useState(false);
   const [showEditCard, setShowEditCard] = useState(false);
+  const [reloadIndex, setReloadIndex] = useState(1);
   const [showAlert] = useIonAlert();
   const [showToast] = useIonToast();
 
@@ -76,19 +77,12 @@ const List: React.FC = () => {
   };
 
   useEffect(() => {
-    // openDatabase().catch((error) => {
-    //   console.error("Error opening database:", error);
-    // });
     fetchUsers();
-  }, [initialized]);
+  }, [initialized, reloadIndex]);
 
-  // Inside List component
   const fetchUsers = async () => {
     try {
-      // Check if database connection is established
       if (initialized && db.current) {
-        // Synchronize data with database
-        //await syncDataWithDatabase();
       }
       await fetchUsersFromApi();
     } catch (error) {
@@ -98,7 +92,6 @@ const List: React.FC = () => {
 
   const syncDataWithDatabase = async (result: UserData[]) => {
     try {
-      alert(1);
       let operations: any | undefined = [];
       if (initialized && db.current !== null) {
         console.log("initialized", initialized, db.current);
@@ -120,11 +113,26 @@ const List: React.FC = () => {
                   body: operation.data,
                 });
                 break;
-              case "update":
-                await axios.put(`/api/users/`);
+              case "put":
+                const editedId = JSON.parse(operation.data);
+                await fetch(`http://10.138.88.77:3000/users/${editedId.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: operation.data,
+                });
                 break;
               case "delete":
-                await axios.delete(`/api/users/${operation.email}`);
+                await fetch(
+                  `http://10.138.88.77:3000/users/${operation.data}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
                 break;
               default:
                 throw new Error(`Unknown operation type: ${operation.type}`);
@@ -141,36 +149,37 @@ const List: React.FC = () => {
     }
   };
 
- const fetchUsersFromApi = async () => {
+  const fetchUsersFromApi = async () => {
     try {
-        const response = await fetch('http://10.138.88.77:3000/data', {
-          method: 'GET',
+      const response = await fetch("http://10.138.88.77:3000/data", {
+        method: "GET",
+      });
+      const result = await response.json();
+      console.log("Response:", result);
+      await syncDataWithDatabase(result);
+
+      await performSQLAction(async (db) => {
+        await db?.run(`DELETE  FROM users`);
+      });
+      result.map(async (res: UserData) => {
+        await performSQLAction(async (db) => {
+          const respSelect = await db?.query(
+            `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`,
+            [res.id, res.first_name, res.last_name, res.email]
+          );
         });
-        const result = await response.json();
-        console.log('Response:', result);
-        await syncDataWithDatabase(result)
-  
-          await performSQLAction(async (db) => {
-            await db?.run(`DELETE  FROM users`);
-          });
-          result.map(async (res:UserData) => {
-             await performSQLAction(async (db) => {
-             const respSelect = await db?.query(`INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`, 
-             [res.first_name, res.last_name, res.email]);
-          })
-       
-          setUsers(result || [])
-        
+
+        setUsers(result || []);
+
         console.log("Database connection successful, fetched from API");
-        });
-        
+      });
     } catch (error) {
       console.error("Error fetching users from database:", error);
       await performSQLAction(async (db) => {
-        const respSelect = await db?.query(`SELECT * FROM users`)
-        console.log(respSelect)
-        setUsers(respSelect?.values || [])
-      })
+        const respSelect = await db?.query(`SELECT * FROM users`);
+        console.log(respSelect);
+        setUsers(respSelect?.values || []);
+      });
       throw error;
     }
   };
@@ -184,8 +193,7 @@ const List: React.FC = () => {
         },
         body: JSON.stringify(user),
       });
-      const result = await response.json();
-      console.log("Response:", result);
+      setReloadIndex(reloadIndex + 1);
       setNewUser({
         id: getLastId([...users, user]) + 1,
         first_name: "",
@@ -208,42 +216,80 @@ const List: React.FC = () => {
           JSON.stringify(user),
         ]);
       });
+      setShowCard(false);
+      setUsers((prevUsers) => [...prevUsers, user]);
     }
-    setUsers((prevUsers) => [...prevUsers, user]);
   };
 
   const editUser = async (updatedUser: UserData) => {
     try {
-      await performSQLAction(async (db) => {
-        await db?.run(
-          `UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
-          [
-            updatedUser.first_name,
-            updatedUser.last_name,
-            updatedUser.email,
-            updatedUser.id,
-          ]
-        );
-      });
+      const response = await fetch(
+        `http://10.138.88.77:3000/users/${updatedUser.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedUser),
+        }
+      );
+      setReloadIndex(reloadIndex + 1);
+      setShowEditCard(false);
+    } catch (error) {
+      console.error("Error editing user in database:", error);
+      console.log(updatedUser);
+
+      try {
+        await performSQLAction(async (db) => {
+          await db?.run(
+            `UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
+            [
+              updatedUser.first_name,
+              updatedUser.last_name,
+              updatedUser.email,
+              updatedUser.id,
+            ]
+          );
+        });
+        await performSQLAction(async (db) => {
+          await db?.run(`INSERT INTO operations (type, data) VALUES (?, ?)`, [
+            "put",
+            JSON.stringify(updatedUser),
+          ]);
+        });
+      } catch (error) {
+        console.log("spunon fare", error);
+      }
+
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.id === updatedUser.id ? updatedUser : user
         )
       );
-      setShowEditCard(false);
-    } catch (error) {
-      console.error("Error editing user in database:", error);
     }
   };
 
   const deleteUser = async (userId: number) => {
     try {
+      const response = await fetch(`http://10.138.88.77:3000/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      setReloadIndex(reloadIndex + 1);
+    } catch (error) {
+      console.error("Error deleting user from database:", error);
       await performSQLAction(async (db) => {
         await db?.run(`DELETE FROM users WHERE id = ?`, [userId]);
       });
+      await performSQLAction(async (db) => {
+        await db?.run(`INSERT INTO operations (type, data) VALUES (?, ?)`, [
+          "delete",
+          JSON.stringify(userId),
+        ]);
+      });
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-    } catch (error) {
-      console.error("Error deleting user from database:", error);
     }
   };
 

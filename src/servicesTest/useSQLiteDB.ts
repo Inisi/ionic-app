@@ -1,30 +1,37 @@
 // useSQLiteDB.tsx
 
-import { SQLiteConnection, SQLiteDBConnection, CapacitorSQLite } from "@capacitor-community/sqlite";
+import {
+  SQLiteConnection,
+  SQLiteDBConnection,
+  CapacitorSQLite,
+} from "@capacitor-community/sqlite";
 import { useEffect, useRef, useState } from "react";
 import { Storage } from "@ionic/storage";
 
 const useSQLiteDB = () => {
   const [initialized, setInitialized] = useState<boolean>(false);
-  const sqlite = useRef<SQLiteConnection>()
-  const db = useRef<SQLiteDBConnection>()
+  const sqlite = useRef<SQLiteConnection>();
+  const db = useRef<SQLiteDBConnection>();
 
   const storage = new Storage();
 
-  useEffect(()=>{
+  useEffect(() => {
     const initializeDB = async () => {
       if (sqlite.current) return;
 
       sqlite.current = new SQLiteConnection(CapacitorSQLite);
-      console.log(sqlite.current)
+      console.log(sqlite.current);
       const ret = await sqlite.current.checkConnectionsConsistency();
-      console.log(ret)
+      console.log(ret);
       const isConn = (await sqlite.current.isConnection("mydatabase", false))
         .result;
 
-      console.log('isConnected', isConn)
+      console.log("isConnected", isConn);
       if (ret.result && isConn) {
-        db.current = await sqlite.current.retrieveConnection("mydatabase", false);
+        db.current = await sqlite.current.retrieveConnection(
+          "mydatabase",
+          false
+        );
       } else {
         db.current = await sqlite.current.createConnection(
           "mydatabase",
@@ -34,20 +41,25 @@ const useSQLiteDB = () => {
           false
         );
       }
-      console.log(db)
+      console.log(db);
     };
 
-    initializeDB().then(() => {
-      console.log('success')
-      initializeTables();
-      setInitialized(true);
-    }).catch(err => {console.log('My error', err)})
-  }, [])
+    initializeDB()
+      .then(() => {
+        console.log("success");
+        initializeTables();
+        setInitialized(true);
+      })
+      .catch((err) => {
+        console.log("My error", err);
+      });
+  }, []);
 
   const initializeTables = async () => {
     const queryCreateTable = [
       ` CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
+        local_id INTEGER PRIMARY KEY,
+        id INTEGER,
         first_name TEXT,
         last_name TEXT,
         thumbnail TEXT,
@@ -57,12 +69,12 @@ const useSQLiteDB = () => {
         id INTEGER PRIMARY KEY,
         type TEXT,
         data JSON
-      );`
-      ]
-    await performSQLAction(async (db: SQLiteDBConnection | undefined) => {  
+      );`,
+    ];
+    await performSQLAction(async (db: SQLiteDBConnection | undefined) => {
       if (!db) {
-      console.error('Database connection is not initialized');
-      return;
+        console.error("Database connection is not initialized");
+        return;
       }
 
       for (const query of queryCreateTable) {
@@ -73,7 +85,6 @@ const useSQLiteDB = () => {
           console.error(`Error executing query: ${query}`, error);
         }
       }
-    
     });
   };
 
@@ -85,7 +96,7 @@ const useSQLiteDB = () => {
       await db.current?.open();
       await action(db.current);
     } catch (error) {
-     console.log(error)
+      console.log(error);
     } finally {
       try {
         (await db.current?.isDBOpen())?.result && (await db.current?.close());
@@ -96,10 +107,14 @@ const useSQLiteDB = () => {
 
   const openDatabase = async () => {
     try {
-      const newDbConnection = new SQLiteDBConnection("myDatabase", false, "no-encryption");
+      const newDbConnection = new SQLiteDBConnection(
+        "myDatabase",
+        false,
+        "no-encryption"
+      );
       await newDbConnection.open();
-      console.log(newDbConnection)
-      db.current = newDbConnection
+      console.log(newDbConnection);
+      db.current = newDbConnection;
       setInitialized(true);
     } catch (error) {
       console.error("Error opening SQLite database:", error);
@@ -108,8 +123,7 @@ const useSQLiteDB = () => {
     }
   };
 
-
-  return { performSQLAction, initialized, db, openDatabase  };
+  return { performSQLAction, initialized, db, openDatabase };
 };
 
 export default useSQLiteDB;
