@@ -17,7 +17,7 @@ import React from "react";
 import { Redirect, Route } from "react-router";
 import List from "./List";
 import Settings from "./Settings";
-import { homeOutline, newspaperOutline } from "ionicons/icons";
+import { homeOutline, navigate, newspaperOutline } from "ionicons/icons";
 
 const Menu: React.FC = () => {
   const paths = [

@@ -8,7 +8,6 @@ import {
   IonHeader,
   IonIcon,
   IonImg,
-  IonInput,
   IonItem,
   IonItemOptions,
   IonItemSliding,
@@ -22,10 +21,8 @@ import {
   useIonAlert,
   useIonToast,
 } from "@ionic/react";
-import _, { result } from "lodash";
 import {
   addCircle,
-  compassSharp,
   pencil,
   trashBinOutline,
   trashSharp,
@@ -36,7 +33,7 @@ import { UserData } from "../servicesTest/databaseFunctions";
 import CreateNewUser from "./CreateNewUser";
 import useSQLiteDB from "../servicesTest/useSQLiteDB";
 import EditUser from "./editUser";
-import axios from "axios";
+import useNetworkStatus from "../hooks/useNetworkStatus";
 
 const storage = new Storage();
 
@@ -56,17 +53,17 @@ const List: React.FC = () => {
     picture: { thumbnail: "" },
     email: "",
   });
-  const { performSQLAction, initialized, db, openDatabase } = useSQLiteDB();
-
   const [showCard, setShowCard] = useState(false);
   const [showEditCard, setShowEditCard] = useState(false);
   const [reloadIndex, setReloadIndex] = useState(1);
   const [showAlert] = useIonAlert();
   const [showToast] = useIonToast();
-
+  const { performSQLAction, initialized, db, openDatabase } = useSQLiteDB();
+  const networkStatus = useNetworkStatus()
   useEffect(() => {
     initializeStorage();
-  }, []);
+
+  }, [reloadIndex, initialized]);
 
   const initializeStorage = async () => {
     try {
@@ -78,13 +75,18 @@ const List: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [initialized, reloadIndex]);
-
+  }, [networkStatus, reloadIndex]);
   const fetchUsers = async () => {
     try {
-      if (initialized && db.current) {
-      }
+      if(networkStatus.connected){
       await fetchUsersFromApi();
+      }else{
+        await performSQLAction(async (db) => {
+          const respSelect = await db?.query(`SELECT * FROM users`);
+          console.log(respSelect);
+          setUsers(respSelect?.values || []);
+        });
+      }
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -161,18 +163,17 @@ const List: React.FC = () => {
       await performSQLAction(async (db) => {
         await db?.run(`DELETE  FROM users`);
       });
-      result.map(async (res: UserData) => {
+      for(const res of result) {
         await performSQLAction(async (db) => {
           const respSelect = await db?.query(
             `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`,
             [res.id, res.first_name, res.last_name, res.email]
           );
+          console.log('Users inserted into local db', respSelect)
         });
-
-        setUsers(result || []);
-
-        console.log("Database connection successful, fetched from API");
-      });
+      };
+      setUsers(result || []);
+      console.log("Database connection successful, fetched from API");
     } catch (error) {
       console.error("Error fetching users from database:", error);
       await performSQLAction(async (db) => {
@@ -186,6 +187,7 @@ const List: React.FC = () => {
 
   const addUser = async (user: UserData) => {
     try {
+      if(networkStatus.connected){
       const response = await fetch("http://10.138.88.77:3000/users", {
         method: "POST",
         headers: {
@@ -202,6 +204,22 @@ const List: React.FC = () => {
         email: "",
       });
       setShowCard(false);
+    }else{
+      await performSQLAction(async (db) => {
+        await db?.run(
+          `INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)`,
+          [user.first_name, user.last_name, user.email]
+        );
+      });
+      await performSQLAction(async (db) => {
+        await db?.run(`INSERT INTO operations (type, data) VALUES (?, ?)`, [
+          "post",
+          JSON.stringify(user),
+        ]);
+      });
+      setShowCard(false);
+      setUsers((prevUsers) => [...prevUsers, user]);
+    }
     } catch (error) {
       console.error("Error adding user to database:", error);
       await performSQLAction(async (db) => {
@@ -223,6 +241,7 @@ const List: React.FC = () => {
 
   const editUser = async (updatedUser: UserData) => {
     try {
+      if(networkStatus.connected){
       const response = await fetch(
         `http://10.138.88.77:3000/users/${updatedUser.id}`,
         {
@@ -235,6 +254,30 @@ const List: React.FC = () => {
       );
       setReloadIndex(reloadIndex + 1);
       setShowEditCard(false);
+      setSelectedUser({id: 0, 
+     first_name: "",
+    last_name: "",
+    picture: { thumbnail: "" },
+    email: ""})
+    }else{
+      await performSQLAction(async (db) => {
+        await db?.run(
+          `UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
+          [
+            updatedUser.first_name,
+            updatedUser.last_name,
+            updatedUser.email,
+            updatedUser.id,
+          ]
+        );
+      });
+      await performSQLAction(async (db) => {
+        await db?.run(`INSERT INTO operations (type, data) VALUES (?, ?)`, [
+          "put",
+          JSON.stringify(updatedUser),
+        ]);
+      });
+    }
     } catch (error) {
       console.error("Error editing user in database:", error);
       console.log(updatedUser);
@@ -271,13 +314,28 @@ const List: React.FC = () => {
 
   const deleteUser = async (userId: number) => {
     try {
+      if(networkStatus.connected){
+
       const response = await fetch(`http://10.138.88.77:3000/users/${userId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
       });
-      setReloadIndex(reloadIndex + 1);
+        setReloadIndex(reloadIndex + 1);
+      }else{
+        await performSQLAction(async (db) => {
+          await db?.run(`DELETE FROM users WHERE id = ?`, [userId]);
+        });
+        await performSQLAction(async (db) => {
+          await db?.run(`INSERT INTO operations (type, data) VALUES (?, ?)`, [
+            "delete",
+            JSON.stringify(userId),
+          ]);
+        });
+        setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+      }
+    
     } catch (error) {
       console.error("Error deleting user from database:", error);
       await performSQLAction(async (db) => {
