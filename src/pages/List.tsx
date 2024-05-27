@@ -14,6 +14,7 @@ import {
   IonItemSliding,
   IonLabel,
   IonList,
+  IonLoading,
   IonMenuButton,
   IonPage,
   IonSearchbar,
@@ -61,6 +62,7 @@ const List: React.FC = () => {
   const [showCard, setShowCard] = useState(false);
   const [showEditCard, setShowEditCard] = useState(false);
   const [reloadIndex, setReloadIndex] = useState(1);
+  const [showLoading, setShowLoading] = useState(false);
   const [showAlert] = useIonAlert();
   const [showToast] = useIonToast();
 
@@ -94,12 +96,10 @@ const List: React.FC = () => {
     try {
       let operations: any | undefined = [];
       if (initialized && db.current !== null) {
-        console.log("initialized", initialized, db.current);
         await performSQLAction(async (db) => {
           let respSelect = await db?.query(`SELECT * FROM operations`);
           operations = respSelect?.values;
         });
-        console.log(operations);
         if (operations?.length > 0) {
           operations.map(async (operation: any) => {
             console.log(operation);
@@ -142,6 +142,10 @@ const List: React.FC = () => {
             let respSelect = await db?.query(`DELETE FROM operations`);
             console.log(respSelect, "operations after deleted");
           });
+          await performSQLAction(async (db) => {
+            await db?.run(`DELETE  FROM users`);
+          });
+          setReloadIndex(reloadIndex + 1);
         }
       }
     } catch (error) {
@@ -155,12 +159,8 @@ const List: React.FC = () => {
         method: "GET",
       });
       const result = await response.json();
-      console.log("Response:", result);
       await syncDataWithDatabase(result);
 
-      await performSQLAction(async (db) => {
-        await db?.run(`DELETE  FROM users`);
-      });
       result.map(async (res: UserData) => {
         await performSQLAction(async (db) => {
           const respSelect = await db?.query(
@@ -202,6 +202,7 @@ const List: React.FC = () => {
         email: "",
       });
       setShowCard(false);
+      setShowLoading(false);
     } catch (error) {
       console.error("Error adding user to database:", error);
       await performSQLAction(async (db) => {
@@ -217,6 +218,8 @@ const List: React.FC = () => {
         ]);
       });
       setShowCard(false);
+
+      setShowLoading(false);
       setUsers((prevUsers) => [...prevUsers, user]);
     }
   };
@@ -235,6 +238,8 @@ const List: React.FC = () => {
       );
       setReloadIndex(reloadIndex + 1);
       setShowEditCard(false);
+
+      setShowLoading(false);
     } catch (error) {
       console.error("Error editing user in database:", error);
       console.log(updatedUser);
@@ -261,6 +266,7 @@ const List: React.FC = () => {
         console.log("spunon fare", error);
       }
 
+      setShowLoading(false);
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.id === updatedUser.id ? updatedUser : user
@@ -278,6 +284,8 @@ const List: React.FC = () => {
         },
       });
       setReloadIndex(reloadIndex + 1);
+
+      setShowLoading(false);
     } catch (error) {
       console.error("Error deleting user from database:", error);
       await performSQLAction(async (db) => {
@@ -290,6 +298,8 @@ const List: React.FC = () => {
         ]);
       });
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+
+      setShowLoading(false);
     }
   };
 
@@ -354,7 +364,13 @@ const List: React.FC = () => {
             <IonCard key={index}>
               <IonItemSliding key={index}>
                 <IonItemOptions side="start">
-                  <IonButton color="danger" onClick={() => deleteUser(user.id)}>
+                  <IonButton
+                    color="danger"
+                    onClick={() => {
+                      deleteUser(user.id);
+                      setShowLoading(true);
+                    }}
+                  >
                     Delete
                   </IonButton>
                 </IonItemOptions>
@@ -378,7 +394,12 @@ const List: React.FC = () => {
                       {user.first_name} {user.last_name}
                       <p>{user.email}</p>
                     </IonLabel>
-                    <IonButton color="none" onClick={() => deleteUser(user.id)}>
+                    <IonButton
+                      color="none"
+                      onClick={() => {
+                        deleteUser(user.id);
+                      }}
+                    >
                       <IonIcon
                         slot="icon-only"
                         icon={trashSharp}
@@ -405,6 +426,7 @@ const List: React.FC = () => {
                       editUser={editUser}
                       selectedUser={selectedUser}
                       setSelectedUser={setSelectedUser}
+                      setShowLoading={setShowLoading}
                     />
                   )}
                 </IonCardContent>
@@ -422,9 +444,11 @@ const List: React.FC = () => {
             newUser={newUser}
             setNewUser={setNewUser}
             addUser={addUser}
+            setShowLoading={setShowLoading}
           />
         )}
       </IonContent>
+      <IonLoading isOpen={showLoading} message={"Please wait..."} />
     </IonPage>
   );
 };

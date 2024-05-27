@@ -9,10 +9,11 @@ interface CreateNewUserProps {
   addUser: any;
   setNewUser: any;
   newUser: any;
+  setShowLoading: Function;
 }
 
 const CreateNewUser = (props: CreateNewUserProps) => {
-  const { setShowCard, addUser, setNewUser, newUser } = props;
+  const { setShowCard, addUser, setNewUser, newUser, setShowLoading } = props;
 
   const handleInputChange = (e: any, key: keyof UserData) => {
     setNewUser({
@@ -39,7 +40,14 @@ const CreateNewUser = (props: CreateNewUserProps) => {
           value={newUser.email}
           onIonChange={(e) => handleInputChange(e, "email")}
         />
-        <IonButton onClick={() => addUser(newUser)}>Submit</IonButton>
+        <IonButton
+          onClick={() => {
+            addUser(newUser);
+            setShowLoading(true);
+          }}
+        >
+          Submit
+        </IonButton>
         <IonButton onClick={() => setShowCard(false)}>Cancel</IonButton>
       </IonItem>
     </>

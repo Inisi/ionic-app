@@ -8,24 +8,27 @@ interface EditUserProps {
   editUser: (user: UserData) => void;
   setSelectedUser: (user: UserData) => void;
   selectedUser: UserData;
+  setShowLoading: Function;
 }
 
 const EditUser: React.FC<EditUserProps> = ({
   setShowEditCard,
   editUser,
   selectedUser,
-  setSelectedUser
+  setSelectedUser,
+  setShowLoading,
 }) => {
   const handleInputChange = (e: any, key: keyof UserData) => {
     setSelectedUser({
       ...selectedUser,
-      [key]: e.target.value, 
+      [key]: e.target.value,
     });
   };
 
   const handleSubmit = () => {
     editUser(selectedUser);
     setShowEditCard(false);
+    setShowLoading(true);
   };
 
   return (
