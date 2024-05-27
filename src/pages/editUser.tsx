@@ -17,10 +17,12 @@ const EditUser: React.FC<EditUserProps> = ({
   setSelectedUser
 }) => {
   const handleInputChange = (e: any, key: keyof UserData) => {
-    setSelectedUser({
-      ...selectedUser,
-      [key]: e.target.value, 
-    });
+    setSelectedUser((prevUser: UserData): UserData => {
+      return {
+          ...prevUser,
+          [key]: e.target.value,
+      };
+  })
   };
 
   const handleSubmit = () => {
