@@ -72,14 +72,15 @@ const useSQLiteDB = () => {
       );`,
     ];
     await performSQLAction(async (db: SQLiteDBConnection | undefined) => {
-      if (!db) {
+      if (!sqlite.current) {
         console.error("Database connection is not initialized");
-        return;
+        openDatabase()
       }
+    
 
       for (const query of queryCreateTable) {
         try {
-          const response = await db.execute(query);
+          const response = await db?.execute(query);
           console.log(`Table creation response: ${JSON.stringify(response)}`);
         } catch (error) {
           console.error(`Error executing query: ${query}`, error);
@@ -107,17 +108,32 @@ const useSQLiteDB = () => {
 
   const openDatabase = async () => {
     try {
-      const newDbConnection = new SQLiteDBConnection(
-        "myDatabase",
-        false,
-        "no-encryption"
-      );
-      await newDbConnection.open();
-      console.log(newDbConnection);
-      db.current = newDbConnection;
-      setInitialized(true);
+      if (sqlite.current) return;
+
+      sqlite.current = new SQLiteConnection(CapacitorSQLite);
+      console.log(sqlite.current);
+      const ret = await sqlite.current.checkConnectionsConsistency();
+      console.log(ret);
+      const isConn = (await sqlite.current.isConnection("mydatabase", false))
+        .result;
+
+      console.log("isConnected", isConn);
+      if (ret.result && isConn) {
+        db.current = await sqlite.current.retrieveConnection(
+          "mydatabase",
+          false
+        );
+      } else {
+        db.current = await sqlite.current.createConnection(
+          "mydatabase",
+          false,
+          "no-encryption",
+          1,
+          false
+        );
+      }
     } catch (error) {
-      console.error("Error opening SQLite database:", error);
+      console.error("Error reopening SQLite database:", error);
       setInitialized(false);
       throw error;
     }
